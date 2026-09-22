@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set a teacher password of at least 12 characters}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      DATA_DIR: /var/data
+    volumes:
+      - exam-data:/var/data
+    restart: unless-stopped
+volumes:
+  exam-data:
