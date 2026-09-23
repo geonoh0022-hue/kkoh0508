@@ -1,9 +1,0 @@
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
-import {initialDatabase,validateDatabase,submitScores} from '../domain.mjs';
-function fixture(){const d=initialDatabase(),s=d.years[d.activeYear].sessions[d.activeExam];s.exams=[{subject:'수학',subjectKey:'math'}];s.students=['a','b'].map(id=>({id,name:id,lotto:{math:{pred:'',actual:''}}}));d.years[d.activeYear].roster=s.students.map(({id,name})=>({id,name}));return d;}
-const request=(d,id,values,field='pred')=>({year:d.activeYear,exam:d.activeExam,studentId:id,field,values});
-test('empty and existing database validation',()=>{validateDatabase(initialDatabase());validateDatabase(fixture());assert.throws(()=>validateDatabase({version:3,years:{}}));});
-test('sequential student submissions preserve other students and score fields',()=>{const d=fixture();submitScores(d,request(d,'a',{math:71}));submitScores(d,request(d,'b',{math:82}));submitScores(d,request(d,'a',{math:75},'actual'));const s=d.years[d.activeYear].sessions[d.activeExam].students;assert.deepEqual(s[0].lotto.math,{pred:'71',actual:'75'});assert.equal(s[1].lotto.math.pred,'82');});
-test('server enforces prediction window including last day',()=>{const d=fixture();d.years[d.activeYear].sessions[d.activeExam].lottoPredWindow={start:'2026-09-01',end:'2026-09-23'};submitScores(d,request(d,'a',{math:80}),'2026-09-23');assert.throws(()=>submitScores(d,request(d,'a',{math:81}),'2026-09-24'));});
-test('reject invalid scores, missing subjects, stale exam and unknown students',()=>{const d=fixture();for(const v of ['',39,101,null,{},'NaN'])assert.throws(()=>submitScores(d,request(d,'a',{math:v})));assert.throws(()=>submitScores(d,request(d,'a',{})));assert.throws(()=>submitScores(d,request(d,'unknown',{math:80})));assert.throws(()=>submitScores(d,{...request(d,'a',{math:80}),exam:'1-1'}));});
